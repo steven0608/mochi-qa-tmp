@@ -213,6 +213,7 @@ body.paused *{animation-play-state:paused!important}
 #ghead .pill{font-size:18px}
 #gclose{border:0;background:rgba(255,255,255,.9);border-radius:50%;width:56px;height:56px;font-size:22px;
   font-weight:900;color:#e2548b;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.15)}
+.mclose{position:absolute;top:10px;right:10px;width:44px;height:44px;border-radius:50%;border:0;background:#ffe9f1;color:#e2548b;font-size:20px;font-weight:900;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.15);z-index:2}
 #gcanvas{flex:1;touch-action:none}
 #gmsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:6}
 #gmsg .card{background:rgba(255,255,255,.95);border-radius:26px;padding:26px 34px;text-align:center;max-width:86vw;
@@ -322,8 +323,8 @@ body.mochi3d-ready #actions{bottom:110px}
       <div class="decor" id="decorLiving">
         <svg class="scenedecor" style="left:6%;top:6%;width:34%" viewBox="0 0 120 100"><rect x="8" y="8" width="104" height="84" rx="12" fill="#fff" opacity=".85"/><rect x="18" y="18" width="84" height="64" rx="8" fill="#bfe6ff"/><circle cx="88" cy="40" r="14" fill="#ffd94d"/><path d="M60 18v64M18 50h84" stroke="#fff" stroke-width="5" opacity=".9"/></svg>
         <svg class="scenedecor" style="left:50%;bottom:4%;width:52%;transform:translateX(-50%)" viewBox="0 0 200 44"><ellipse cx="100" cy="24" rx="96" ry="19" fill="#ffb3c9" opacity=".55"/><ellipse cx="100" cy="24" rx="70" ry="13" fill="#ffd9e8" opacity=".7"/></svg>
-        <svg style="left:8%;bottom:9%;width:17%" viewBox="0 0 64 64"><circle cx="32" cy="32" r="28" fill="#ff8a8a"/><path d="M32 4a28 28 0 0119.8 47.8A28 28 0 0112.2 12.2 28 28 0 0132 4z" fill="#fff" opacity=".85"/><path d="M12 44a28 28 0 0020 8 28 28 0 0020-8" stroke="#ff8a8a" stroke-width="6" fill="none"/><circle cx="32" cy="32" r="5" fill="#fff" opacity=".9"/></svg>
-        <svg style="right:9%;bottom:7%;width:20%" viewBox="0 0 64 70"><ellipse cx="32" cy="42" rx="20" ry="18" fill="#c9a06a"/><circle cx="32" cy="20" r="14" fill="#d8b57e"/><circle cx="26" cy="18" r="2.4" fill="#5a3a48"/><circle cx="38" cy="18" r="2.4" fill="#5a3a48"/><ellipse cx="32" cy="25" rx="3.4" ry="2.6" fill="#8a5a3a"/><ellipse cx="16" cy="38" rx="7" ry="10" fill="#c9a06a"/><ellipse cx="48" cy="38" rx="7" ry="10" fill="#c9a06a"/><ellipse cx="23" cy="58" rx="7" ry="6" fill="#c9a06a"/><ellipse cx="41" cy="58" rx="7" ry="6" fill="#c9a06a"/><path d="M27 14l-3-6M37 14l3-6" stroke="#d8b57e" stroke-width="5" stroke-linecap="round"/></svg>
+        
+        
       </div>
       <div class="decor hidden" id="decorKitchen">
         <svg class="scenedecor" style="right:6%;top:8%;width:30%" viewBox="0 0 90 120"><rect x="8" y="6" width="74" height="110" rx="14" fill="#a8d8f0" stroke="#7fb8dd" stroke-width="3"/><rect x="8" y="58" width="74" height="6" fill="#7fb8dd"/><rect x="60" y="20" width="8" height="26" rx="4" fill="#5a8ab0"/><rect x="60" y="72" width="8" height="26" rx="4" fill="#5a8ab0"/><circle cx="26" cy="30" r="9" fill="#fff" opacity=".5"/><circle cx="30" cy="88" r="7" fill="#fff" opacity=".5"/></svg>
@@ -4887,7 +4888,7 @@ function openGameMenu(){
   dismissGameMenu();
   const g = document.createElement("div");
   g.className = "modal show"; g.id = "gameMenu";
-  let html = '<div class="mcard" style="max-width:430px"><h1>'+t("gamemenu.title")+'</h1><p>'+t("gamemenu.sub")+'</p><div class="ggrid">';
+  let html = '<div class="mcard" style="max-width:430px;position:relative"><button class="mclose" aria-label="'+t("aria.closeGame")+'">\u2715</button><h1>'+t("gamemenu.title")+'</h1><p>'+t("gamemenu.sub")+'</p><div class="ggrid">';
   for(const d of GAME_DEFS)
     html += '<button class="gbtn" data-g="'+d.id+'" style="background:linear-gradient(135deg,'+d.c[0]+','+d.c[1]+')">'+t(d.key)+'</button>';
   html += '</div></div>';
@@ -4899,6 +4900,7 @@ function openGameMenu(){
       g.remove(); FX.blip(); pokeInteract(); d.start();
     });
   });
+  g.querySelector(".mclose").addEventListener("click", ()=>{ g.remove(); FX.blip(); });
   g.onclick = e=>{ if(e.target===g) g.remove(); };
   FX.blip();
 }
@@ -6491,7 +6493,12 @@ const MOCHI3D = {
     this.allTaps=this.allTaps.filter(v=>now-v<20000);this.allTaps.push(now);
     if(this.allTaps.length>=12){this.beginDizzy();return true;}
     const hyper=this.zoneTaps[zone].length>=4,variant=this.choose(zone);
-    this.mood=Math.min(1,this.mood+.08);this.playReaction(zone,variant,hyper);
+    this.mood=Math.min(1,this.mood+.08);
+    let tpx=null,tpy=null;
+    try{const lr=$("mochi3d-particles").getBoundingClientRect();
+      if(lr.width>0&&lr.height>0){tpx=Math.max(0,Math.min(100,(x-lr.left)/lr.width*100));tpy=Math.max(0,Math.min(100,(y-lr.top)/lr.height*100));}
+    }catch(_){}
+    this.playReaction(zone,variant,hyper,tpx,tpy);
     if(!this.firstPet){this.firstPet=true;this.sayHigh(t("m3.firstPet"),true);}
     try{addMeter("happy",hyper?3:2);}catch(_){}
     return true;
@@ -6516,17 +6523,20 @@ const MOCHI3D = {
     const r=$("mochi3d-tap").getBoundingClientRect(),nx=(x-r.left)/r.width,ny=(y-r.top)/r.height;
     if(ny<.2)return nx<.3||nx>.7?"horn":"head";if(ny>.78)return "foot";if(nx<.2||nx>.8)return nx>.8&&ny>.42?"tail":"paw";return "belly";
   },
-  playReaction(zone,variant,hyper,idle){
+  playReaction(zone,variant,hyper,a,b,idle){
+    if(typeof a==="boolean"){idle=a;a=b=null;}
+    const tpx=(typeof a==="number")?a:null,tpy=(typeof b==="number")?b:null;
+    const EX=(fb)=>tpx===null?fb:tpx, EY=(fb)=>tpy===null?fb:tpy;
     const duration=zone==="idleLook"?1050:zone==="idleBlink"?430:hyper?980:850;
     this.reaction={zone:zone,variant:variant||0,hyper:!!hyper,start:performance.now(),duration:duration,idle:!!idle};
     this.reactionSerial++;
     const count=hyper?7:4;
-    if(zone==="head"){FX.pop();setTimeout(()=>FX.giggle(),90);this.emit("heart",count,50,38);}
-    else if(zone==="horn"){FX.boing();FX.tone({f:(hyper?280:220),f2:180,dur:.12,type:"square",vol:.16});this.sparkle();this.emit("star",count,50,27);}
-    else if(zone==="belly"){FX.giggle();this.emit("note",count,50,53);this.emit("ring",1,50,56);}
-    else if(zone==="paw"){FX.pop();setTimeout(()=>FX.pop(),120);this.emit("heart",count,50,48);}
-    else if(zone==="tail"){FX.boing();this.sparkle();this.emit("star",count,62,54);this.emit("ring",1,60,58);}
-    else if(zone==="foot"){FX.boing();setTimeout(()=>FX.pop(),130);this.emit("ring",2,50,75);}
+    if(zone==="head"){FX.pop();setTimeout(()=>FX.giggle(),90);this.emit("heart",count,EX(50),EY(38));}
+    else if(zone==="horn"){FX.boing();FX.tone({f:(hyper?280:220),f2:180,dur:.12,type:"square",vol:.16});this.sparkle();this.emit("star",count,EX(50),EY(27));}
+    else if(zone==="belly"){FX.giggle();this.emit("note",count,EX(50),EY(53));this.emit("ring",1,EX(50),EY(56));}
+    else if(zone==="paw"){FX.pop();setTimeout(()=>FX.pop(),120);this.emit("heart",count,EX(50),EY(48));}
+    else if(zone==="tail"){FX.boing();this.sparkle();this.emit("star",count,EX(62),EY(54));this.emit("ring",1,EX(60),EY(58));}
+    else if(zone==="foot"){FX.boing();setTimeout(()=>FX.pop(),130);this.emit("ring",2,EX(50),EY(75));}
   },
   beginDizzy(){
     this.dizzyUntil=performance.now()+5000;this.reaction=null;this.allTaps=[];FX.snore();this.emit("dizzy",7,50,32);
@@ -6655,6 +6665,12 @@ const MOCHI3D = {
   songClock(){const c=FX.ctx;return c&&c.state==="running"?c.currentTime:performance.now()/1000;},
   startSong(forceTest){
     if(this.song.running)return true;this.touchReset();FX.ensure();
+    try{ // iOS/WKWebView: unlock the HTMLAudio voice clips inside the tap gesture
+      const lg=(typeof LANG!=="undefined"&&LANG==="zh")?"zh":"en";
+      for(let n=1;n<=6;n++){const au=voiceAudio("song"+n+"_"+lg);
+        if(au){try{const pp=au.play();if(pp&&pp.catch)pp.catch(()=>{});}catch(_){}
+          try{au.pause();}catch(_){}}}
+    }catch(_){}
     const encore=Date.now()-this.song.lastEnd<10000&&!forceTest,bpm=100*(encore?1.15:1);this.song.encore=encore;this.song.beatDur=60/bpm;this.song.startClock=this.songClock();this.song.startPerf=performance.now();this.song.running=true;this.song.beatTicks=0;this.song.line=-1;this.lastBeat=-1;this.chime();
     const notes=[261.63,293.66,329.63,392,440];
     for(let i=0;i<this.song.totalBeats;i++){
